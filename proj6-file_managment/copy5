@@ -1,0 +1,144 @@
+// ------------------------------------------------------
+// FILE: MYCOPY.C
+//
+// NAME: MAX GEISZLER
+//
+// DESCRIPTION: THIS PROGRAM WILL TAKE ANY TEXT FILE, AND 
+// CREATE A NEW FILE NAMED BY THE SECOND PARAMETER, AS
+// LONG AS THAT FILE DOES NOT EXIST. IT THEN COPIES THE
+// FIRST FILE INTO THE SECOND FILE CAPITALIZING EVERY LOWERCASE
+// CHAR. AND SPITS OUT  TO STDOUT METRICS ON THAT FILE LIKE
+// NUMBER OF CHARS COPPIED, NUMBER LINES, NUMBER OF CHARS CHANGED,
+// AND NUMBER OF PUNCTUATION CHARS.
+//
+// SYNTAX:
+// THE FIRST ARGUMENT NEEDS TO BE A FILE CONTAINING TEXT. 
+//THE SECOND ARGUMENT NEEDS TO BE A NON-EXISTENT VALID FILE NAME.
+// ------------------------------------------------------
+
+#INCLUDE <STDIO.H>
+#INCLUDE <STDLIB.H>
+#INCLUDE <SYS/TYPES.H>
+#INCLUDE <UNISTD.H>
+#INCLUDE <FCNTL.H>
+#INCLUDE <ERRNO.H>
+#INCLUDE <CTYPE.H>
+
+
+
+#DEFINE BUFFER 32
+#DEFINE VALID_ARGS 3
+#DEFINE SUCCESS 0
+
+
+INT MAIN(INT ARGC, CHAR * ARGV[]) {
+
+        ERRNO = SUCCESS;
+        FILE * RD = NULL;
+        FILE * RDCHECK = NULL; //USED TO CHECK IF WRITE FILE DOES NOT YET EXIST
+        FILE * WR = NULL;
+        CHAR BUFF[BUFFER];
+        SIZE_T NUMBBYTES = 0;
+        SIZE_T WRBYTES =0;
+
+        INT I = 0;
+        INT CHARSCOPIED = 0;
+        INT CHARSCHANGED = 0;
+        INT LINESINFILE = 0;
+        INT CHARPUNK = 0;
+        CHAR C = '\0';
+
+        IF (ARGC != VALID_ARGS) {
+                FPRINTF(STDERR, "MUST HAVE %D ARGUMENT(S)\N", VALID_ARGS - 1);
+                RETURN EXIT_FAILURE;
+        }
+
+        PRINTF("WILL TRY TO OPEN '%S' READ-ONLY\N", ARGV[1]);
+        RD = FOPEN(ARGV[1], "R");
+        IF (ERRNO || RD == NULL) {
+                PERROR("UNEXPECTED ERROR OPENING READ FILE");
+                FCLOSE(RD);
+                RD = NULL;
+                EXIT(EXIT_FAILURE);
+        }
+
+        //CHECK TO SEE IF WRITE FILE EXITS
+        RDCHECK = FOPEN(ARGV[2], "R");
+        IF (ERRNO || RDCHECK == NULL) {
+                ERRNO = SUCCESS; //RESET ERRNO AS THIS IS EXPECT BEHAVIOUR
+        } ELSE {
+                FPRINTF(STDERR, "FILE \"%S\" ALREADY EXISTS, MUST WRITE TO NEW FILENAME\N", ARGV[2]);
+                FCLOSE(RD);
+                FCLOSE(RDCHECK);
+                RD = NULL;
+                RDCHECK = NULL;
+                EXIT(EXIT_FAILURE);
+        }
+
+        PRINTF("WILL TRY OPEN FILE '%S' READ/WRITE\N", ARGV[2]);
+        WR = FOPEN(ARGV[2], "W");
+        IF (ERRNO || WR == NULL) {
+                FCLOSE(RD);
+                FCLOSE(RDCHECK);
+                FCLOSE(WR);
+                RD = NULL;
+                RDCHECK = NULL;
+                WR = NULL;
+                PERROR("UNEXPECTED ERROR OPENING WRITE FILE");
+                EXIT(EXIT_FAILURE);
+        }
+
+        
+     
+
+        WHILE (!FEOF(RD)) {
+                NUMBBYTES = FREAD(BUFF, 1, BUFFER, RD);
+                IF(NUMBBYTES>0){
+                
+                        BUFF[NUMBBYTES] = '\0'; //HOW DOES THIS NOT OVERWRITE THE LAST CHAR?
+
+                        FOR (I = 0; I < NUMBBYTES; I++) {
+                                C = BUFF[I]; //LOOKUP CHAR ONCE
+
+                                CHARSCOPIED++;
+                                IF (ISLOWER(C)) {
+                                        BUFF[I] = TOUPPER(C);
+                                        CHARSCHANGED++;
+                                }
+                                IF (ISPUNCT(C)) {
+                                        CHARPUNK++;
+                                }
+                                IF (C == '\N') {
+                                        LINESINFILE++;
+                                }
+
+                        }
+                        WRBYTES = FWRITE(BUFF, 1, NUMBBYTES, WR); //WRITE BUFF TO FILE
+                        IF(FERROR(WR)){
+                                FPRINTF(STDERR, "ERROR CONDITION WRITING FILE \N");
+                                BREAK;
+                        }
+                }ELSE IF(FERROR(RD)){
+                        FPRINTF(STDERR, "ERROR CONDITION READING FILE\N");
+                        BREAK;
+                }
+        }
+        PRINTF("NUMBER OF CHARACTERS COPIED = %D \N", CHARSCOPIED);
+        PRINTF("NUMBER OF CHARACTERS CHANGED =  %D \N", CHARSCHANGED);
+        PRINTF("NUMBER OF LINES IN THE FILE =  %D \N", LINESINFILE);
+        PRINTF("NUMBER OF PUNCTUATION CHARS=  %D \N", CHARPUNK);
+        IF (RD != NULL) {
+                FCLOSE(RD);
+                RD = NULL;
+        }
+        IF (RDCHECK != NULL) {
+                FCLOSE(RDCHECK);
+                RDCHECK = NULL;
+        }
+        IF (WR != NULL) {
+                FCLOSE(WR);
+                WR = NULL;
+        }
+
+        RETURN EXIT_SUCCESS;
+}

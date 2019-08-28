@@ -1,0 +1,86 @@
+#INCLUDE <STDIO.H>
+#INCLUDE <STDLIB.H>
+#INCLUDE <SYS/TYPES.H>
+#INCLUDE <UNISTD.H>
+#INCLUDE <FCNTL.H>
+#INCLUDE <ERRNO.H>
+#INCLUDE <CTYPE.H>
+
+
+#DEFINE BUFFER 32
+#DEFINE VALID_ARGS 3
+
+INT MAIN(INT ARGC, CHAR *ARGV[])
+{
+        
+        ERRNO = 0;
+        INT RD = -1;
+        INT WR = -1;
+        CHAR BUFF[BUFFER];
+        INT NUMBBYTES =0;
+        INT NUMBBYTESWR =0;
+        INT I =0;
+        INT CHARSCOPIED =0;
+        INT CHARSCHANGED =0;
+        INT LINESINFILE =0;
+        INT CHARPUNK=0;
+        CHAR C = NULL;
+
+
+        IF (ARGC != VALID_ARGS) {
+                PRINTF("MUST HAVE %D ARGUMENT(S)\N", VALID_ARGS - 1);
+                RETURN EXIT_FAILURE;
+        }
+
+        PRINTF("WILL TRY TO OPEN '%S' READ-ONLY\N", ARGV[1]);
+        RD = OPEN(ARGV[1], O_RDONLY);
+        IF (ERRNO) {
+                PERROR("UNEXPECTED ERROR OPENING READ FILE");
+                EXIT(EXIT_FAILURE);
+        }
+        PRINTF("WILL TRY OPEN FILE '%S' READ/WRITE\N", ARGV[2]);
+        WR = OPEN(ARGV[2], O_CREAT | O_RDWR);
+        IF (ERRNO) {
+                PERROR("UNEXPECTED ERROR OPENING WRITE FILE");
+                EXIT(EXIT_FAILURE);
+        }
+             
+        NUMBBYTES = READ(RD,BUFF,BUFFER);
+       
+         WHILE (NUMBBYTES){
+                BUFF[NUMBBYTES]='\0';
+               
+                
+                FOR (I=0;I<NUMBBYTES;I++){
+                        C = BUFF[I];//LOOKUP CHAR ONCE
+                        
+                        PRINTF(".%C",C);
+                        CHARSCOPIED++;
+                        IF (ISLOWER(C)){
+                                BUFF[I]=TOUPPER(C);
+                                CHARSCHANGED++;
+                        }
+                        IF(ISPUNCT(C)){
+                                CHARPUNK++;
+                        }
+                
+                        IF(C=='\N'){
+                                LINESINFILE++;
+                        }
+
+                        
+                }
+                NUMBBYTESWR=WRITE(WR,BUFF,NUMBBYTES);//WRITE BUFF TO FILE
+                PRINTF("RD: %D, WR %D\N", NUMBBYTES, NUMBBYTESWR);
+                NUMBBYTES = READ(RD,BUFF,BUFFER);//READ NEW BYTES INTO BUFF
+         }
+        PRINTF("NUMBER OF CHARACTERS COPIED = %D \N",CHARSCOPIED);
+        PRINTF("NUMBER OF CHARACTERS CHANGED =  %D \N", CHARSCHANGED);
+        PRINTF("NUMBER OF LINES IN THE FILE =  %D \N", LINESINFILE);
+        PRINTF("NUMBER OF PUNCTUATION CHARS=  %D \N", CHARPUNK);
+        PRINTF("SUCCESS: DESCRIPTOR = %D\N", RD);
+        CLOSE(RD); //OS TRIES TO CLEAN UP THE ISSUES IF THIS IS STILL OPEN.
+        CLOSE(WR);
+
+        RETURN EXIT_SUCCESS;
+}

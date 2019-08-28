@@ -1,0 +1,25 @@
+
+user	0m0.100s
+sys	0m0.052s
+11912
+
+user	0m0.076s
+sys	0m0.022s
+11912
+
+user	0m0.111s
+sys	0m0.023s
+11960
+
+user	0m0.117s
+sys	0m0.030s
+11920
+
+user	0m0.140s
+sys	0m0.022s
+11920
+
+
+user	0m0.108s
+sys	0m0.030s
+11920
